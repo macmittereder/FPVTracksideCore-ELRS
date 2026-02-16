@@ -42,7 +42,7 @@ namespace Timing.ELRS
             {
                 try
                 {
-                    return SerialPort.GetPortNames();
+                    return System.IO.Ports.SerialPort.GetPortNames();
                 }
                 catch
                 {

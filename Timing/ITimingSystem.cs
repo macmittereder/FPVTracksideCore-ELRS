@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Timing.Chorus;
+using Timing.ELRS;
 using Timing.ImmersionRC;
 using Timing.RotorHazard;
 using Tools;
@@ -151,6 +152,7 @@ namespace Timing
     }
 
     [XmlInclude(typeof(DummySettings))]
+    [XmlInclude(typeof(ELRSSettings))]
     [XmlInclude(typeof(LapRFSettings))]
     [XmlInclude(typeof(LapRFSettingsUSB))]
     [XmlInclude(typeof(LapRFSettingsEthernet))]

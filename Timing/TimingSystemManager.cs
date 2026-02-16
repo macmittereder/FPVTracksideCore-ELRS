@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using Timing.Chorus;
+using Timing.ELRS;
 using Timing.ImmersionRC;
 using Timing.RotorHazard;
 using Tools;
@@ -183,6 +184,9 @@ namespace Timing
 
                 else if (settings is DummySettings)
                     timingSystem = new DummyTimingSystem();
+
+                else if (settings is ELRSSettings)
+                    timingSystem = new ELRSTimingSystem();
 
                 else if (settings is VideoTimingSettings)
                     timingSystem = new VideoTimingSystem();

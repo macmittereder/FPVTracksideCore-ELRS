@@ -7,33 +7,17 @@ namespace Timing.ELRS
 {
     public class ELRSSettings : TimingSystemSettings
     {
-        [Category("ELRS Connection")]
-        [Description("Serial port name (e.g., COM3, /dev/ttyUSB0)")]
+        [Category("VRXC Connection")]
+        [Description("Serial port name (e.g., COM3, /dev/ttyUSB0) connected to ESP32 running VRXC/ELRS Backpack firmware")]
         public string SerialPort { get; set; }
         
-        [Category("ELRS Connection")]
-        [Description("Serial baud rate (default: 420000 for ELRS/CRSF)")]
+        [Category("VRXC Connection")]
+        [Description("Serial baud rate (default: 420000 for ELRS/MSP)")]
         public int BaudRate { get; set; }
         
-        [Category("Trigger Configuration")]
-        [Description("RC channel to use for race start/stop trigger (5-16, where 5=AUX1, 6=AUX2, etc.)")]
-        public int TriggerChannel { get; set; }
-        
-        [Category("Trigger Configuration")]
-        [Description("Channel value threshold for trigger (1000-2000 microseconds, default: 1500)")]
-        public int ThresholdValue { get; set; }
-        
-        [Category("Trigger Configuration")]
-        [Description("Trigger on high (>threshold) or low (<threshold)")]
-        public bool TriggerOnHigh { get; set; }
-        
-        [Category("Advanced")]
-        [Description("Minimum time between triggers in milliseconds (debounce)")]
+        [Category("Race Control")]
+        [Description("Minimum time between race start/stop commands in milliseconds (debounce)")]
         public int DebounceMs { get; set; }
-        
-        [Category("Advanced")]
-        [Description("Number of virtual receivers to simulate (for testing)")]
-        public int VirtualReceivers { get; set; }
         
         [Browsable(false)]
         public string[] AvailablePorts
@@ -55,12 +39,8 @@ namespace Timing.ELRS
         {
             // Default values
             SerialPort = GetDefaultPort();
-            BaudRate = 420000; // Standard CRSF/ELRS baud rate
-            TriggerChannel = 6; // AUX2 (channel 6)
-            ThresholdValue = 1500; // Midpoint
-            TriggerOnHigh = true; // Trigger when channel goes above threshold
-            DebounceMs = 500; // Half second debounce
-            VirtualReceivers = 8; // Default to 8 slots
+            BaudRate = 420000; // Standard ELRS/MSP baud rate
+            DebounceMs = 500; // Half second debounce to prevent double triggers
         }
         
         private string GetDefaultPort()
@@ -98,7 +78,7 @@ namespace Timing.ELRS
         
         public override string ToString()
         {
-            return $"ELRS ({SerialPort})";
+            return $"VRXC/ELRS ({SerialPort})";
         }
     }
 }

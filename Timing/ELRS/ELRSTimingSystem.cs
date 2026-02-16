@@ -7,22 +7,22 @@ using Tools;
 namespace Timing.ELRS
 {
     /// <summary>
-    /// ELRS (ExpressLRS) Timing System
-    /// Monitors ELRS/CRSF RC channels for race start/stop triggers
+    /// ELRS (ExpressLRS) Timing System with VRXC Protocol Support
+    /// Monitors VRXC/ELRS Backpack commands for race start/stop control
     /// </summary>
     public class ELRSTimingSystem : ITimingSystem
     {
         public TimingSystemType Type => TimingSystemType.Other;
-        public string Name => "ELRS";
+        public string Name => "ELRS/VRXC";
         public bool Connected { get; private set; }
-        public int MaxPilots => elrsSettings.VirtualReceivers;
+        public int MaxPilots => 1; // VRXC is race director control, not lap timing
         
         private ELRSSettings elrsSettings;
-        private CRSFProtocol crsfProtocol;
+        private VRXCProtocol vrxcProtocol;
         private bool detectionRunning;
         private DateTime lastTriggerTime;
-        private bool lastTriggerState;
         private List<ListeningFrequency> frequencies;
+        private string backpackVersion;
         
         public TimingSystemSettings Settings
         {
@@ -43,10 +43,19 @@ namespace Timing.ELRS
                     Value = Connected ? $"Connected ({elrsSettings.SerialPort})" : "Disconnected"
                 };
                 
+                if (!string.IsNullOrEmpty(backpackVersion))
+                {
+                    yield return new StatusItem
+                    {
+                        StatusOK = true,
+                        Value = $"Backpack: {backpackVersion}"
+                    };
+                }
+                
                 yield return new StatusItem
                 {
                     StatusOK = true,
-                    Value = $"Ch{elrsSettings.TriggerChannel} @ {elrsSettings.ThresholdValue}µs"
+                    Value = "VRXC Protocol (MSP)"
                 };
                 
                 if (detectionRunning)
@@ -54,7 +63,7 @@ namespace Timing.ELRS
                     yield return new StatusItem
                     {
                         StatusOK = true,
-                        Value = "Detecting"
+                        Value = "Listening for race commands"
                     };
                 }
             }
@@ -63,13 +72,14 @@ namespace Timing.ELRS
         public ELRSTimingSystem()
         {
             elrsSettings = new ELRSSettings();
-            crsfProtocol = new CRSFProtocol();
+            vrxcProtocol = new VRXCProtocol();
             frequencies = new List<ListeningFrequency>();
             lastTriggerTime = DateTime.MinValue;
-            lastTriggerState = false;
             
-            crsfProtocol.OnChannelsReceived += HandleChannelsReceived;
-            crsfProtocol.OnError += HandleError;
+            vrxcProtocol.OnStartRaceCommand += HandleStartRaceCommand;
+            vrxcProtocol.OnStopRaceCommand += HandleStopRaceCommand;
+            vrxcProtocol.OnBackpackVersion += HandleBackpackVersion;
+            vrxcProtocol.OnError += HandleError;
         }
         
         public bool Connect()
@@ -84,12 +94,12 @@ namespace Timing.ELRS
                     return false;
                 }
                 
-                bool success = crsfProtocol.Connect(elrsSettings.SerialPort, elrsSettings.BaudRate);
+                bool success = vrxcProtocol.Connect(elrsSettings.SerialPort, elrsSettings.BaudRate);
                 Connected = success;
                 
                 if (success)
                 {
-                    Logger.TimingLog.Log(this, "Connected", $"{elrsSettings.SerialPort} @ {elrsSettings.BaudRate}bps", Logger.LogType.Notice);
+                    Logger.TimingLog.Log(this, "Connected", $"{elrsSettings.SerialPort} @ {elrsSettings.BaudRate}bps (VRXC/MSP)", Logger.LogType.Notice);
                 }
                 else
                 {
@@ -111,7 +121,7 @@ namespace Timing.ELRS
             try
             {
                 Logger.TimingLog.Log(this, "Disconnecting", Logger.LogType.Notice);
-                crsfProtocol.Disconnect();
+                vrxcProtocol.Disconnect();
                 Connected = false;
                 return true;
             }
@@ -144,7 +154,7 @@ namespace Timing.ELRS
         {
             try
             {
-                Logger.TimingLog.Log(this, "StartDetection", Logger.LogType.Notice);
+                Logger.TimingLog.Log(this, "StartDetection", "Listening for VRXC race commands", Logger.LogType.Notice);
                 
                 if (!Connected)
                 {
@@ -154,7 +164,6 @@ namespace Timing.ELRS
                 
                 detectionRunning = true;
                 lastTriggerTime = DateTime.MinValue;
-                lastTriggerState = false;
                 
                 return true;
             }
@@ -180,7 +189,7 @@ namespace Timing.ELRS
             }
         }
         
-        private void HandleChannelsReceived(int[] channels)
+        private void HandleStartRaceCommand()
         {
             if (!detectionRunning)
             {
@@ -189,45 +198,24 @@ namespace Timing.ELRS
             
             try
             {
-                // Check trigger channel (convert 1-based to 0-based index)
-                int channelIndex = elrsSettings.TriggerChannel - 1;
+                DateTime now = DateTime.Now;
                 
-                if (channelIndex < 0 || channelIndex >= channels.Length)
+                // Apply debounce
+                if ((now - lastTriggerTime).TotalMilliseconds < elrsSettings.DebounceMs)
                 {
+                    Logger.TimingLog.Log(this, "Debounce", "Start command ignored (too soon)", Logger.LogType.Notice);
                     return;
                 }
                 
-                int channelValue = channels[channelIndex];
-                bool triggerState = elrsSettings.TriggerOnHigh 
-                    ? (channelValue > elrsSettings.ThresholdValue)
-                    : (channelValue < elrsSettings.ThresholdValue);
+                lastTriggerTime = now;
                 
-                // Check for state change (edge detection)
-                if (triggerState != lastTriggerState)
+                Logger.TimingLog.Log(this, "VRXC Command", "START RACE received from transmitter", Logger.LogType.Notice);
+                
+                // Fire detection event for all configured frequencies
+                // This triggers race start for all pilots simultaneously
+                foreach (var freq in frequencies)
                 {
-                    lastTriggerState = triggerState;
-                    
-                    // Only trigger on the configured edge
-                    if (triggerState)
-                    {
-                        DateTime now = DateTime.Now;
-                        
-                        // Apply debounce
-                        if ((now - lastTriggerTime).TotalMilliseconds < elrsSettings.DebounceMs)
-                        {
-                            return;
-                        }
-                        
-                        lastTriggerTime = now;
-                        
-                        // Fire detection event for all configured frequencies
-                        // This simulates lap triggers for all pilots simultaneously
-                        foreach (var freq in frequencies)
-                        {
-                            Logger.TimingLog.Log(this, "Trigger", $"Ch{elrsSettings.TriggerChannel} = {channelValue}µs → {freq.Frequency}MHz", Logger.LogType.Notice);
-                            OnDetectionEvent?.Invoke(this, freq.Frequency, now, channelValue);
-                        }
-                    }
+                    OnDetectionEvent?.Invoke(this, freq.Frequency, now, 1);
                 }
             }
             catch (Exception ex)
@@ -236,9 +224,49 @@ namespace Timing.ELRS
             }
         }
         
+        private void HandleStopRaceCommand()
+        {
+            if (!detectionRunning)
+            {
+                return;
+            }
+            
+            try
+            {
+                DateTime now = DateTime.Now;
+                
+                // Apply debounce
+                if ((now - lastTriggerTime).TotalMilliseconds < elrsSettings.DebounceMs)
+                {
+                    Logger.TimingLog.Log(this, "Debounce", "Stop command ignored (too soon)", Logger.LogType.Notice);
+                    return;
+                }
+                
+                lastTriggerTime = now;
+                
+                Logger.TimingLog.Log(this, "VRXC Command", "STOP RACE received from transmitter", Logger.LogType.Notice);
+                
+                // Fire detection event with stop indicator (value = 0)
+                foreach (var freq in frequencies)
+                {
+                    OnDetectionEvent?.Invoke(this, freq.Frequency, now, 0);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.TimingLog.LogException(this, ex);
+            }
+        }
+        
+        private void HandleBackpackVersion(string version)
+        {
+            backpackVersion = version;
+            Logger.TimingLog.Log(this, "Backpack Version", version, Logger.LogType.Notice);
+        }
+        
         private void HandleError(string error)
         {
-            Logger.TimingLog.Log(this, "CRSF Error", error, Logger.LogType.Error);
+            Logger.TimingLog.Log(this, "VRXC Error", error, Logger.LogType.Error);
         }
         
         public void Dispose()
@@ -249,7 +277,7 @@ namespace Timing.ELRS
             }
             
             Disconnect();
-            crsfProtocol?.Dispose();
+            vrxcProtocol?.Dispose();
         }
     }
 }

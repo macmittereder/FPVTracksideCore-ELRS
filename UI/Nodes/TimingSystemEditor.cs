@@ -210,6 +210,12 @@ namespace UI.Nodes
                 return new ComPortPropertyNode<TimingSystemSettings>(obj, pi, ButtonBackground, TextColor, ButtonHover);
             }
 
+            // For ELRS SerialPort property, add a Detect button that auto-finds the backpack
+            if (obj is ELRSSettings elrsObj && pi.Name == "SerialPort")
+            {
+                return new ELRSDetectPortPropertyNode(elrsObj, pi, ButtonBackground, TextColor, ButtonHover);
+            }
+
             return base.CreatePropertyNode(obj, pi);
         }
 
@@ -252,6 +258,50 @@ namespace UI.Nodes
                     }
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Property node for ELRS SerialPort that shows a COM port dropdown 
+    /// plus a "Detect" button to auto-find the ELRS Backpack.
+    /// </summary>
+    public class ELRSDetectPortPropertyNode : ComPortPropertyNode<TimingSystemSettings>
+    {
+        private TextButtonNode detectButton;
+        private ELRSSettings elrsSettings;
+
+        public ELRSDetectPortPropertyNode(ELRSSettings obj, PropertyInfo pi, Color background, Color textColor, Color hoverColor)
+            : base(obj, pi, background, textColor, hoverColor)
+        {
+            elrsSettings = obj;
+
+            detectButton = new TextButtonNode("Detect", background, hoverColor, textColor);
+            detectButton.RelativeBounds = new RectangleF(0.75f, 0f, 0.25f, 1f);
+            detectButton.OnClick += DetectButton_OnClick;
+            AddChild(detectButton);
+
+            // Shrink the text value to make room for the button
+            if (TextValue != null)
+                TextValue.RelativeBounds = new RectangleF(TextValue.RelativeBounds.X, 0f, 0.74f, 1f);
+        }
+
+        private void DetectButton_OnClick(MouseInputEvent mie)
+        {
+            // Run detect on a background thread so UI doesn't freeze
+            System.Threading.Tasks.Task.Run(() =>
+            {
+                string found = VRXCProtocol.DetectPort(elrsSettings.BaudRate);
+                if (found != null)
+                {
+                    elrsSettings.SerialPort = found;
+                    UpdateFromObject();
+                }
+                else
+                {
+                    // No backpack found — show all ports as fallback
+                    Options = System.IO.Ports.SerialPort.GetPortNames().OfType<object>().ToList();
+                }
+            });
         }
     }
 }

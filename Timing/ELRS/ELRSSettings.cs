@@ -12,7 +12,7 @@ namespace Timing.ELRS
         public string SerialPort { get; set; }
         
         [Category("VRXC Connection")]
-        [Description("Serial baud rate (default: 420000 for ELRS/MSP)")]
+        [Description("Serial baud rate (default: 460800 for ELRS/MSP)")]
         public int BaudRate { get; set; }
         
         [Category("Race Control")]
@@ -39,7 +39,7 @@ namespace Timing.ELRS
         {
             // Default values
             SerialPort = GetDefaultPort();
-            BaudRate = 420000; // Standard ELRS/MSP baud rate
+            BaudRate = 460800; // Standard ELRS Backpack baud rate (matches SoloHazard plugin)
             DebounceMs = 500; // Half second debounce to prevent double triggers
         }
         

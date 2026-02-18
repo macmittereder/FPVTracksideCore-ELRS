@@ -44,7 +44,7 @@ namespace Timing.ELRS
         {
         }
         
-        public bool Connect(string portName, int baudRate = 420000)
+        public bool Connect(string portName, int baudRate = 460800)
         {
             try
             {
@@ -54,17 +54,52 @@ namespace Timing.ELRS
                 }
                 
                 serialPort = new SerialPort(portName, baudRate, Parity.None, 8, StopBits.One);
-                serialPort.ReadTimeout = 100;
-                serialPort.WriteTimeout = 100;
+                serialPort.ReadTimeout = 500;
+                serialPort.WriteTimeout = 500;
                 serialPort.Open();
-                
+
+                // Handshake: send version request and wait for response (matches SoloHazard plugin behavior)
+                Thread.Sleep(200); // Let ESP32 settle after port open
+                serialPort.DiscardInBuffer();
+
+                byte[] versionRequest = BuildMSPPacket(MSP_TYPE_COMMAND, MSP_ELRS_GET_BACKPACK_VERSION, new byte[0]);
+                serialPort.Write(versionRequest, 0, versionRequest.Length);
+
+                Thread.Sleep(300); // Wait for response
+
+                bool handshakeOk = false;
+                int available = serialPort.BytesToRead;
+                if (available > 0)
+                {
+                    byte[] response = new byte[available];
+                    serialPort.Read(response, 0, available);
+                    // Look for MSP v2 header '$X' in response
+                    for (int i = 0; i < response.Length - 1; i++)
+                    {
+                        if (response[i] == MSP_HEADER_DOLLAR && response[i + 1] == MSP_HEADER_X)
+                        {
+                            handshakeOk = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!handshakeOk)
+                {
+                    serialPort.Close();
+                    serialPort.Dispose();
+                    serialPort = null;
+                    OnError?.Invoke($"No ELRS Backpack response on {portName} — wrong port or firmware?");
+                    return false;
+                }
+
                 running = true;
                 readThread = new Thread(ReadLoop);
                 readThread.Name = "VRXC Protocol Reader";
                 readThread.IsBackground = true;
                 readThread.Start();
                 
-                // Request version on connect
+                // Request version again to populate status display
                 RequestVersion();
                 
                 return true;
@@ -74,6 +109,84 @@ namespace Timing.ELRS
                 OnError?.Invoke($"Failed to connect: {ex.Message}");
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Scans all serial ports and returns the first one that responds to an ELRS Backpack version request.
+        /// </summary>
+        public static string DetectPort(int baudRate = 460800)
+        {
+            string[] avoidedPorts = { "COM1", "/dev/ttyAMA0", "/dev/ttyAMA10" };
+            string[] ports = SerialPort.GetPortNames();
+
+            foreach (string port in ports)
+            {
+                if (Array.Exists(avoidedPorts, p => p.Equals(port, StringComparison.OrdinalIgnoreCase)))
+                    continue;
+
+                try
+                {
+                    using (var sp = new SerialPort(port, baudRate, Parity.None, 8, StopBits.One))
+                    {
+                        sp.ReadTimeout = 500;
+                        sp.WriteTimeout = 500;
+                        sp.Open();
+
+                        Thread.Sleep(200);
+                        sp.DiscardInBuffer();
+
+                        // Build and send version request packet
+                        byte[] packet = BuildVersionRequestPacket();
+                        sp.Write(packet, 0, packet.Length);
+
+                        Thread.Sleep(300);
+
+                        int available = sp.BytesToRead;
+                        if (available > 0)
+                        {
+                            byte[] response = new byte[available];
+                            sp.Read(response, 0, available);
+                            for (int i = 0; i < response.Length - 1; i++)
+                            {
+                                if (response[i] == MSP_HEADER_DOLLAR && response[i + 1] == MSP_HEADER_X)
+                                {
+                                    return port; // Found it!
+                                }
+                            }
+                        }
+
+                        sp.Close();
+                    }
+                }
+                catch { }
+            }
+
+            return null; // Not found
+        }
+
+        private static byte[] BuildVersionRequestPacket()
+        {
+            // Static version of BuildMSPPacket for use before instance exists
+            const ushort func = MSP_ELRS_GET_BACKPACK_VERSION;
+            byte[] packet = new byte[MSP_HEADER_LENGTH + 1]; // no payload + 1 CRC
+            packet[0] = MSP_HEADER_DOLLAR;
+            packet[1] = MSP_HEADER_X;
+            packet[2] = MSP_TYPE_COMMAND;
+            packet[3] = 0;
+            packet[4] = (byte)(func & 0xFF);
+            packet[5] = (byte)((func >> 8) & 0xFF);
+            packet[6] = 0;
+            packet[7] = 0;
+            // CRC over bytes 3..7
+            byte crc = 0;
+            for (int i = 3; i < MSP_HEADER_LENGTH; i++)
+            {
+                crc ^= packet[i];
+                for (int b = 0; b < 8; b++)
+                    crc = (crc & 0x80) != 0 ? (byte)((crc << 1) ^ 0xD5) : (byte)(crc << 1);
+            }
+            packet[MSP_HEADER_LENGTH] = crc;
+            return packet;
         }
         
         public void Disconnect()

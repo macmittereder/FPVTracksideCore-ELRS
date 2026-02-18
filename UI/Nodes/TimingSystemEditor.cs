@@ -73,8 +73,43 @@ namespace UI.Nodes
                     int lapRFPort = (new LapRFSettingsEthernet()).Port;
                     int rhPort = (new RotorHazardSettings()).Port;
 
-
                     MouseMenu mouseMenu = new MouseMenu(ScanButton);
+
+                    // Scan for ELRS/VRXC USB serial ports (ESP32 ELRS Backpack)
+                    try
+                    {
+                        string[] serialPorts = System.IO.Ports.SerialPort.GetPortNames();
+                        foreach (string port in serialPorts)
+                        {
+                            string portCopy = port;
+                            // Try to probe the port — if it opens at 420000 baud, offer it as ELRS/VRXC
+                            bool isLikelyELRS = false;
+                            try
+                            {
+                                using (var sp = new System.IO.Ports.SerialPort(portCopy, 420000))
+                                {
+                                    sp.ReadTimeout = 200;
+                                    sp.WriteTimeout = 200;
+                                    sp.Open();
+                                    isLikelyELRS = sp.IsOpen;
+                                    sp.Close();
+                                }
+                            }
+                            catch { }
+
+                            if (isLikelyELRS)
+                            {
+                                mouseMenu.AddItem("Add ELRS/VRXC - " + portCopy, () =>
+                                {
+                                    var elrs = new ELRSSettings();
+                                    elrs.SerialPort = portCopy;
+                                    AddNew(elrs);
+                                });
+                            }
+                        }
+                    }
+                    catch { }
+
                     foreach(SubnetScanner.OpenPortsStruct openPort in ss.AliveWithOpenPorts(lapRFPort, rhPort))
                     {
                         foreach (int port in openPort.Ports)

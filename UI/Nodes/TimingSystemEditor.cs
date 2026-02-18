@@ -11,6 +11,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Timing;
+using Timing.ELRS;
 using Timing.ImmersionRC;
 using Timing.RotorHazard;
 using Tools;
@@ -118,6 +119,7 @@ namespace UI.Nodes
             mouseMenu.AddItem("LapRF Puck", () => { AddNew(new Timing.ImmersionRC.LapRFSettingsUSB()); });
             mouseMenu.AddItem("RotorHazard 4.0+", () => { AddNew(new Timing.RotorHazard.RotorHazardSettings()); });
             mouseMenu.AddItem("Chorus32 (alpha)", () => { AddNew(new Timing.Chorus.ChorusSettings()); });
+            mouseMenu.AddItem("ELRS/VRXC", () => { AddNew(new Timing.ELRS.ELRSSettings()); });
             //mouseMenu.AddItem("Video Color (Alpha)", () => { AddNew(new VideoTimingSettings()); });
             mouseMenu.AddItem("Dummy", () => { AddNew(new DummySettings()); });
 

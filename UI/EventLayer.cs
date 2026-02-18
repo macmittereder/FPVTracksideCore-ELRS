@@ -145,14 +145,8 @@ namespace UI
             // ELRS/VRXC external race control — mirrors the UI Start/Stop Race buttons
             EventManager.RaceManager.TimingSystemManager.RaceStartRequest += () =>
             {
-                if (workQueueStartStopRace.QueueLength > 0)
-                    return;
-                workQueueStartStopRace.Enqueue(() =>
-                {
-                    EventManager.RaceManager.PreRaceStart();
-                    EventManager.RaceManager.StartRaceInLessThan(TimeSpan.Zero, TimeSpan.Zero);
-                    ControlButtons.UpdateControlButtons();
-                });
+                // Mirror the normal delayed-start UI button path (uses event min/max delay settings)
+                StartRace();
             };
 
             EventManager.RaceManager.TimingSystemManager.RaceStopRequest += () =>

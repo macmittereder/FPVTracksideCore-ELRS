@@ -142,6 +142,30 @@ namespace UI
                 SoundManager.TimingSystemDisconnected();
             };
 
+            // ELRS/VRXC external race control — mirrors the UI Start/Stop Race buttons
+            EventManager.RaceManager.TimingSystemManager.RaceStartRequest += () =>
+            {
+                if (workQueueStartStopRace.QueueLength > 0)
+                    return;
+                workQueueStartStopRace.Enqueue(() =>
+                {
+                    EventManager.RaceManager.PreRaceStart();
+                    EventManager.RaceManager.StartRaceInLessThan(TimeSpan.Zero, TimeSpan.Zero);
+                    ControlButtons.UpdateControlButtons();
+                });
+            };
+
+            EventManager.RaceManager.TimingSystemManager.RaceStopRequest += () =>
+            {
+                if (workQueueStartStopRace.QueueLength > 0)
+                    return;
+                workQueueStartStopRace.Enqueue(() =>
+                {
+                    EventManager.RaceManager.EndRace();
+                    ControlButtons.UpdateControlButtons();
+                });
+            };
+
             EventManager.RaceManager.OnRaceTimeRemaining += (r, t) =>
             {
                 SoundManager.TimeRemaining(r, t);

@@ -146,7 +146,13 @@ namespace UI
             EventManager.RaceManager.TimingSystemManager.RaceStartRequest += () =>
             {
                 // Mirror the normal delayed-start UI button path (uses event min/max delay settings)
-                StartRace();
+                bool canRun = EventManager.RaceManager.CanRunRace;
+                bool raceRunning = EventManager.RaceManager.RaceRunning;
+                bool queueBusy = workQueueStartStopRace.QueueLength > 0;
+                Logger.UI.Log(this, "ELRS RaceStartRequest", $"CanRunRace={canRun} RaceRunning={raceRunning} QueueBusy={queueBusy}", Logger.LogType.Notice);
+
+                bool result = StartRace();
+                Logger.UI.Log(this, "ELRS RaceStartRequest", $"StartRace() returned {result}", Logger.LogType.Notice);
             };
 
             EventManager.RaceManager.TimingSystemManager.RaceStopRequest += () =>

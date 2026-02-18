@@ -16,6 +16,8 @@ namespace Timing
 
         public event DetectionEventDelegate OnDetectionEvent;
         public event MarshallEventDelegate OnMarshallEvent;
+        public event Action OnRaceStartRequest;
+        public event Action OnRaceStopRequest;
 
         public int MaxPilots { get { return int.MaxValue; } }
         public IEnumerable<StatusItem> Status { get { return new StatusItem[0]; } }

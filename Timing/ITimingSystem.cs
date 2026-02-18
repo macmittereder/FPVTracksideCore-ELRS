@@ -138,6 +138,16 @@ namespace Timing
 
         event MarshallEventDelegate OnMarshallEvent;
 
+        /// <summary>
+        /// Fired when an external timing system requests race start (e.g. ELRS DVR Rec switch ON).
+        /// </summary>
+        event Action OnRaceStartRequest;
+
+        /// <summary>
+        /// Fired when an external timing system requests race stop (e.g. ELRS DVR Rec switch OFF).
+        /// </summary>
+        event Action OnRaceStopRequest;
+
         TimingSystemSettings Settings { get; set; }
 
         IEnumerable<StatusItem> Status { get; }

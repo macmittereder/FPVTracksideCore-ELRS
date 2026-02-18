@@ -35,6 +35,8 @@ namespace Timing.ImmersionRC
 
         public event DetectionEventDelegate OnDetectionEvent;
         public event MarshallEventDelegate OnMarshallEvent;
+        public event Action OnRaceStartRequest;
+        public event Action OnRaceStopRequest;
 
         protected DateTime lastData;
 

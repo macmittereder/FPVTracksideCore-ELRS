@@ -155,6 +155,8 @@ namespace Timing.RotorHazard
         }
 
         public event MarshallEventDelegate OnMarshallEvent;
+        public event Action OnRaceStartRequest;
+        public event Action OnRaceStopRequest;
 
         public RotorHazardTimingSystem()
         {

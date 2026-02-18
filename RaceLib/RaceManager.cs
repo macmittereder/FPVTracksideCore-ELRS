@@ -283,6 +283,8 @@ namespace RaceLib
             TimingSystemManager.DetectionEvent += OnDetection;
             TimingSystemManager.OnConnected += OnTimingSystemReconnect;
             TimingSystemManager.MarshallEvent += OnRaceMarshal;
+            TimingSystemManager.RaceStartRequest += OnExternalRaceStartRequest;
+            TimingSystemManager.RaceStopRequest += OnExternalRaceStopRequest;
 
             races = new List<Race>();
         }
@@ -882,6 +884,54 @@ namespace RaceLib
                 return false;
             }
             return true;
+        }
+
+        private void OnExternalRaceStartRequest()
+        {
+            try
+            {
+                Logger.RaceLog.Log(this, "ExternalRaceStart", "Race start requested by external timing system (ELRS/VRXC)", Logger.LogType.Notice);
+
+                if (RaceRunning)
+                {
+                    Logger.RaceLog.Log(this, "ExternalRaceStart", "Race already running, ignoring start request", Logger.LogType.Notice);
+                    return;
+                }
+
+                // Stage then start (mirrors normal race flow)
+                if (PreRaceStart())
+                {
+                    StartRace();
+                }
+                else
+                {
+                    StartRace();
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.RaceLog.LogException(this, ex);
+            }
+        }
+
+        private void OnExternalRaceStopRequest()
+        {
+            try
+            {
+                Logger.RaceLog.Log(this, "ExternalRaceStop", "Race stop requested by external timing system (ELRS/VRXC)", Logger.LogType.Notice);
+
+                if (!RaceRunning)
+                {
+                    Logger.RaceLog.Log(this, "ExternalRaceStop", "Race not running, ignoring stop request", Logger.LogType.Notice);
+                    return;
+                }
+
+                EndRace();
+            }
+            catch (Exception ex)
+            {
+                Logger.RaceLog.LogException(this, ex);
+            }
         }
 
         public bool EndRace()

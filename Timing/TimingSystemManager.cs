@@ -34,6 +34,9 @@ namespace Timing
         public event TimingSystemDetectionEventDelegate DetectionEvent;
         public event MarshallEventDelegate MarshallEvent;
 
+        public event Action RaceStartRequest;
+        public event Action RaceStopRequest;
+
         public ITimingSystem[] PrimeSystems { get; private set; }
         public ITimingSystem[] SplitSystems { get; private set; }
 
@@ -145,6 +148,8 @@ namespace Timing
             {
                 timingSystem.OnDetectionEvent += OnDetectionEvent;
                 timingSystem.OnMarshallEvent += OnMarshallEvent;
+                timingSystem.OnRaceStartRequest += () => RaceStartRequest?.Invoke();
+                timingSystem.OnRaceStopRequest += () => RaceStopRequest?.Invoke();
 
                 if (timingSystem is ITimingSystemWithRSSI)
                 {

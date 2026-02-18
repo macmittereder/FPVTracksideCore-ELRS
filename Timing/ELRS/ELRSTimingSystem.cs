@@ -32,6 +32,8 @@ namespace Timing.ELRS
         
         public event DetectionEventDelegate OnDetectionEvent;
         public event MarshallEventDelegate OnMarshallEvent;
+        public event Action OnRaceStartRequest;
+        public event Action OnRaceStopRequest;
         
         public IEnumerable<StatusItem> Status
         {
@@ -211,12 +213,8 @@ namespace Timing.ELRS
                 
                 Logger.TimingLog.Log(this, "VRXC Command", "START RACE received from transmitter", Logger.LogType.Notice);
                 
-                // Fire detection event for all configured frequencies
-                // This triggers race start for all pilots simultaneously
-                foreach (var freq in frequencies)
-                {
-                    OnDetectionEvent?.Invoke(this, freq.Frequency, now, 1);
-                }
+                // Fire race start request — RaceManager will handle staging/starting the race
+                OnRaceStartRequest?.Invoke();
             }
             catch (Exception ex)
             {
@@ -246,11 +244,8 @@ namespace Timing.ELRS
                 
                 Logger.TimingLog.Log(this, "VRXC Command", "STOP RACE received from transmitter", Logger.LogType.Notice);
                 
-                // Fire detection event with stop indicator (value = 0)
-                foreach (var freq in frequencies)
-                {
-                    OnDetectionEvent?.Invoke(this, freq.Frequency, now, 0);
-                }
+                // Fire race stop request — RaceManager will handle ending the race
+                OnRaceStopRequest?.Invoke();
             }
             catch (Exception ex)
             {

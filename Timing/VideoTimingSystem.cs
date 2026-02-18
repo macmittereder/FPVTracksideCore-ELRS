@@ -19,6 +19,8 @@ namespace Timing
 
         public event DetectionEventDelegate OnDetectionEvent;
         public event MarshallEventDelegate OnMarshallEvent;
+        public event Action OnRaceStartRequest;
+        public event Action OnRaceStopRequest;
 
         private VideoGateDetector[] detectors;
 

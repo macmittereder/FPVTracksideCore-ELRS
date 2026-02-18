@@ -38,6 +38,8 @@ namespace Timing.Chorus
 
         public event DetectionEventDelegate OnDetectionEvent;
         public event MarshallEventDelegate OnMarshallEvent;
+        public event Action OnRaceStartRequest;
+        public event Action OnRaceStopRequest;
 
         public ChorusSettings Chorus32Settings { get { return Settings as ChorusSettings; } set { Settings = value; } }
 

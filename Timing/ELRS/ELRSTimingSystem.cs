@@ -60,14 +60,11 @@ namespace Timing.ELRS
                     Value = "VRXC Protocol (MSP)"
                 };
                 
-                if (detectionRunning)
+                yield return new StatusItem
                 {
-                    yield return new StatusItem
-                    {
-                        StatusOK = true,
-                        Value = "Listening for race commands"
-                    };
-                }
+                    StatusOK = true,
+                    Value = detectionRunning ? "Race active — listening" : "Ready for start command"
+                };
             }
         }
         
@@ -193,27 +190,27 @@ namespace Timing.ELRS
         
         private void HandleStartRaceCommand()
         {
-            if (!detectionRunning)
-            {
-                return;
-            }
-            
+            // No detectionRunning gate here — the ELRS start command must be able to
+            // INITIATE a race, not just trigger during one. Detection isn't armed until
+            // the race countdown begins, so gating on it creates a chicken-and-egg problem.
+            // EventLayer.StartRace() already checks CanRunRace, RaceRunning, and queue state.
+
             try
             {
                 DateTime now = DateTime.Now;
-                
+
                 // Apply debounce
                 if ((now - lastTriggerTime).TotalMilliseconds < elrsSettings.DebounceMs)
                 {
                     Logger.TimingLog.Log(this, "Debounce", "Start command ignored (too soon)", Logger.LogType.Notice);
                     return;
                 }
-                
+
                 lastTriggerTime = now;
-                
-                Logger.TimingLog.Log(this, "VRXC Command", "START RACE received from transmitter", Logger.LogType.Notice);
-                
-                // Fire race start request — RaceManager will handle staging/starting the race
+
+                Logger.TimingLog.Log(this, "VRXC Command", $"START RACE received from transmitter (detectionRunning={detectionRunning})", Logger.LogType.Notice);
+
+                // Fire race start request — EventLayer.StartRace() handles all validation
                 OnRaceStartRequest?.Invoke();
             }
             catch (Exception ex)

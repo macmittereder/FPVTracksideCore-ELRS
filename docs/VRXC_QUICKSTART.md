@@ -40,7 +40,7 @@
 3. Select **"ELRS/VRXC"**
 4. Click **Settings**:
    - Serial Port: Select your ESP32's COM port
-   - Baud Rate: `420000` (default)
+   - Baud Rate: `460800` (default)
    - Debounce: `500` ms (default)
 5. Click **Connect**
 
@@ -67,7 +67,7 @@
 
 ### No Version Detected?
 - Wrong firmware? Must flash **RotorHazard** target (not TX or VRx backpack)
-- Baud rate? Must be `420000` on both sides
+- Baud rate? Must be `460800` on both sides
 
 ### Commands Not Working?
 - Bind phrase mismatch? Reflash ESP32 with correct transmitter bind phrase

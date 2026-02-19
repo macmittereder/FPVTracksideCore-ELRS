@@ -98,7 +98,7 @@ The backpack must be bound to your race director's transmitter backpack:
 | Setting | Description | Default |
 |---------|-------------|---------|
 | **Serial Port** | COM port connected to ESP32 (e.g., COM3, /dev/ttyUSB0) | Auto-detected |
-| **Baud Rate** | Serial communication speed (must match backpack) | 420000 |
+| **Baud Rate** | Serial communication speed (must match backpack) | 460800 |
 | **Debounce (ms)** | Minimum time between commands to prevent double-triggers | 500 |
 
 ### Finding Your Serial Port
@@ -170,7 +170,7 @@ The DVR Rec switch on your transmitter backpack controls race timing:
 
 **Solutions:**
 - Firmware may not be flashed correctly - reflash with RotorHazard target
-- Baud rate mismatch - ensure 420000 on both sides
+- Baud rate mismatch - ensure 460800 on both sides
 - Try unplugging/replugging USB
 - Check USB drivers are installed (CP210x or CH340 drivers)
 

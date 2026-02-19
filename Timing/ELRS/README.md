@@ -21,7 +21,7 @@ This timing system integrates FPV Trackside with **VRXC (VRx Controller)** proto
 3. **Configure** Trackside:
    - Timing System: "ELRS/VRXC"
    - Serial Port: Select ESP32 port (e.g., COM3)
-   - Baud Rate: 420000
+   - Baud Rate: 460800
 4. **Test**: Toggle DVR Rec switch on transmitter
 
 ## Documentation
@@ -57,7 +57,7 @@ Race Director Transmitter (DVR Rec Switch)
             ↓
 ESP32 Backpack (USB-connected to computer)
             ↓
-    MSP Serial Protocol (420000 baud)
+    MSP Serial Protocol (460800 baud)
             ↓
     VRXCProtocol.cs (parses packets)
             ↓
@@ -76,7 +76,7 @@ ESP32 Backpack (USB-connected to computer)
 | Setting | Default | Description |
 |---------|---------|-------------|
 | Serial Port | Auto | COM port for ESP32 (e.g., COM3, /dev/ttyUSB0) |
-| Baud Rate | 420000 | Must match ELRS Backpack baud rate |
+| Baud Rate | 460800 | Must match ELRS Backpack baud rate |
 | Debounce (ms) | 500 | Minimum time between race commands |
 
 ## Known Limitations

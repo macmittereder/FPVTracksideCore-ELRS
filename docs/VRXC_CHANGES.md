@@ -55,7 +55,7 @@ This document details the technical changes made to integrate VRXC (VRx Controll
      - `VirtualReceivers` (VRXC is for race control, not lap timing)
    - **Kept Settings**:
      - `SerialPort` (still needed for USB connection)
-     - `BaudRate` (still 420000 for MSP)
+     - `BaudRate` (still 460800 for MSP)
      - `DebounceMs` (still needed to prevent double triggers)
    - **Updated**:
      - Category names from "ELRS" to "VRXC"
@@ -312,7 +312,7 @@ If you previously used CRSF channel-based timing:
 | Old Setting | New Setting | Notes |
 |------------|-------------|-------|
 | Serial Port | Serial Port | Same - ESP32 USB port |
-| Baud Rate | Baud Rate | Same - 420000 |
+| Baud Rate | Baud Rate | Same - 460800 |
 | Trigger Channel | ❌ Removed | Not used in VRXC |
 | Threshold Value | ❌ Removed | Not used in VRXC |
 | Trigger On High | ❌ Removed | Not used in VRXC |

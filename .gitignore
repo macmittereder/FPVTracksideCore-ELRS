@@ -16,3 +16,6 @@ ffmpegMediaPlatform/ffmpeg.exe
 ffmpegMediaPlatform/ffmpeg
 Webb/httpfiles/Channels.json
 /UI/~$Translations.xlsx
+
+# Serena MCP (machine-specific, do not commit)
+.serena/
